@@ -29,6 +29,8 @@ void setup() {
   pinMode(piezo,INPUT);
   pinMode(photoRes,INPUT);
   pinMode(pot,INPUT);
+  pinMode(sync1,INPUT);
+  pinMode(sync2,OUTPUT);
   Serial.begin(9600);
   digitalWrite(led1,HIGH);
   digitalWrite(led2,HIGH);
@@ -66,6 +68,9 @@ void loop() {
       break;
     case 7:
       mode7();
+      break;
+    case 8:
+      mode8();
       break;
     default:
       mode0();
@@ -106,29 +111,35 @@ void mode4(){
   } else if(!digitalRead(button1)){
     untriggered = true;
   }
-
-  if (prevMode != 4){
-    prevMode = 4;
-  }
 }
 
 void mode5(){
   openShutterTillPiezo();
   //Serial.println(analogRead(piezo));
-  if (prevMode != 5){
-    prevMode = 5;
-  }
 }
 
 void mode6(){
-  
+  if(analogRead(piezo)<1000){
+    digitalWrite(sync2,HIGH);
+    delay(10);
+    digitalWrite(sync2,LOW);
+  }
 }
 
 void mode7(){
-  
+  if(isBelowLight()){
+    triggerCamera();
+  }
+}
+
+void mode8(){
+  if(isAboveLight()){
+    triggerCamera();
+  }
 }
 
 void readSerial(){
+  prevMode = mode;
   mode = Serial.readString().toInt();
   Serial.println((String) "mode: " + mode);
   
@@ -183,27 +194,31 @@ void triggerCameraAndFlash(){
 
 void triggerCameraAndFlashWithDelay(){
   digitalWrite(trigger,HIGH);
+  delay(10);
+  digitalWrite(trigger,LOW);
   delay(analogRead(pot));
   digitalWrite(flash,HIGH);
   delay(10);
-  digitalWrite(trigger,LOW);
   digitalWrite(flash,LOW);
-  Serial.println(analogRead(pot));
+  //Serial.println(analogRead(pot));
 }
 
 
 void openShutterTillPiezo(){
   if(digitalRead(button1)){
+    armCamera();
     digitalWrite(trigger,HIGH);
   }
   if (analogRead(piezo)<1010){
+    Serial.println(analogRead(piezo));
     delay(analogRead(pot)/10);
     digitalWrite(flash,HIGH);
     delay(10);
     digitalWrite(flash,LOW);
     digitalWrite(trigger,LOW);
-    digitalWrite(focus,LOW);
-    delay(20);
+    disarmCamera();
+    delay(2000);
+    //armCamera();
   }
 }
 
